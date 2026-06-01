@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Send } from 'lucide-react';
-import { supabase } from '../lib/supabase.js';
+import { useConsultation } from '../hooks/useConsultation.js';
 
 const initialForm = {
   fullName: '',
@@ -14,18 +14,9 @@ const initialForm = {
   popiaConsent: false
 };
 
-function splitName(fullName) {
-  const parts = fullName.trim().split(/\s+/).filter(Boolean);
-  return {
-    firstName: parts[0] || '',
-    surname: parts.slice(1).join(' ') || ''
-  };
-}
-
 export default function ConsultationForm() {
   const [form, setForm] = useState(initialForm);
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState(null);
+  const { submitConsultation, loading, success, error } = useConsultation();
 
   function updateField(event) {
     const { name, value, type, checked } = event.target;
@@ -37,57 +28,11 @@ export default function ConsultationForm() {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    setStatus(null);
+    const result = await submitConsultation(form);
 
-    if (!form.fullName.trim() || !form.email.trim()) {
-      setStatus({ type: 'error', message: 'Please add your full name and email address.' });
-      return;
+    if (result.ok) {
+      setForm(initialForm);
     }
-
-    if (!form.popiaConsent) {
-      setStatus({ type: 'error', message: 'Please accept the POPIA consent checkbox before submitting.' });
-      return;
-    }
-
-    setLoading(true);
-    const { firstName, surname } = splitName(form.fullName);
-
-    const payload = {
-      full_name: form.fullName.trim(),
-      first_name: firstName,
-      surname: surname,
-      email: form.email.trim(),
-      phone: form.phone.trim() || null,
-      company_name: form.companyName.trim() || null,
-      business_name: form.companyName.trim() || null,
-      industry: form.industry.trim() || null,
-      team_size: form.teamSize || null,
-      current_challenges: form.currentChallenges.trim() || null,
-      business_challenge: form.currentChallenges.trim() || null,
-      desired_outcome: form.desiredOutcome.trim() || null,
-      service_needed: 'Nuvrixa consultation',
-      preferred_contact_method: 'email',
-      popia_consent: true,
-      source: 'website',
-      status: 'new'
-    };
-
-    const { error } = await supabase.from('consultation_bookings').insert(payload);
-    setLoading(false);
-
-    if (error) {
-      setStatus({
-        type: 'error',
-        message: 'Your request could not be submitted yet. Please check Supabase public insert policies for consultation bookings.'
-      });
-      return;
-    }
-
-    setForm(initialForm);
-    setStatus({
-      type: 'success',
-      message: 'Consultation request received. Nuvrixa will review your details and follow up.'
-    });
   }
 
   return (
@@ -165,9 +110,9 @@ export default function ConsultationForm() {
             I consent to Nuvrixa storing and using my submitted information to respond to this consultation request.
           </label>
 
-          {status && (
-            <div className={`status ${status.type === 'error' ? 'error' : ''}`}>
-              {status.message}
+          {(success || error) && (
+            <div className={`status ${error ? 'error' : ''}`}>
+              {error || success}
             </div>
           )}
 
