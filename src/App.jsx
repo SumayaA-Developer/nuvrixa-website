@@ -1,0 +1,1 @@
+export default function App(){return (<div><h1>Nuvrixa</h1><p>AI-Powered Business Systems</p></div>)}
