@@ -5,13 +5,13 @@ const fallbackUpdates = [
   {
     id: 'fallback-update-1',
     title: 'Portal shell prepared',
-    content: 'The client portal structure has been created and is ready for live Supabase data integration.',
+    update_text: 'The client portal structure has been created and is ready for live Supabase data integration.',
     created_at: null
   },
   {
     id: 'fallback-update-2',
     title: 'Authentication layer added',
-    content: 'Supabase Auth, protected routes and role-based access have been prepared.',
+    update_text: 'Supabase Auth, protected routes and role-based access have been prepared.',
     created_at: null
   }
 ];
@@ -28,8 +28,8 @@ function formatDate(value) {
   }
 }
 
-export default function ProjectTimeline({ updates = fallbackUpdates }) {
-  const { loading, error } = useProjects();
+export default function ProjectTimeline() {
+  const { updates, loading, error } = useProjects();
   const timelineItems = Array.isArray(updates) && updates.length > 0 ? updates : fallbackUpdates;
 
   return (
@@ -50,7 +50,7 @@ export default function ProjectTimeline({ updates = fallbackUpdates }) {
               <Clock3 size={15} /> {formatDate(update.created_at)}
             </p>
             <h3>{update.title}</h3>
-            <p>{update.content || update.description || 'No description added yet.'}</p>
+            <p>{update.update_text || 'No update text added yet.'}</p>
           </article>
         ))}
       </div>
