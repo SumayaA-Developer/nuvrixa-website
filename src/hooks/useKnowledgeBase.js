@@ -2,45 +2,46 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
 
 const fallbackCategories = [
-  { id: 'fallback-category-1', name: 'Getting Started', slug: 'getting-started', sort_order: 1 },
-  { id: 'fallback-category-2', name: 'Client Portal', slug: 'client-portal', sort_order: 2 },
-  { id: 'fallback-category-3', name: 'Project Tracking', slug: 'project-tracking', sort_order: 3 },
-  { id: 'fallback-category-4', name: 'Support', slug: 'support', sort_order: 4 }
+  { id: 'fallback-category-1', name: 'Getting Started', slug: 'getting-started', description: 'Start using your Nuvrixa portal.', sort_order: 1, is_active: true },
+  { id: 'fallback-category-2', name: 'Client Portal', slug: 'client-portal', description: 'Portal guidance and support.', sort_order: 2, is_active: true },
+  { id: 'fallback-category-3', name: 'Project Tracking', slug: 'project-tracking', description: 'Understand project updates and milestones.', sort_order: 3, is_active: true },
+  { id: 'fallback-category-4', name: 'Support', slug: 'support', description: 'Support ticket guidance.', sort_order: 4, is_active: true }
 ];
 
 const fallbackArticles = [
   {
     id: 'fallback-article-1',
-    category_id: 'fallback-category-1',
-    category_name: 'Getting Started',
+    category: 'Getting Started',
     title: 'How to use your Nuvrixa client portal',
     slug: 'how-to-use-your-nuvrixa-client-portal',
+    summary: 'A quick guide to your client workspace.',
+    content: 'Your portal resources will appear here once live content is published.',
     last_updated: 'Coming soon'
   },
   {
     id: 'fallback-article-2',
-    category_id: 'fallback-category-3',
-    category_name: 'Project Tracking',
+    category: 'Project Tracking',
     title: 'Understanding project milestones and updates',
     slug: 'understanding-project-milestones-and-updates',
+    summary: 'Learn how milestones and updates are displayed.',
+    content: 'Project guidance will appear here once live content is published.',
     last_updated: 'Coming soon'
   },
   {
     id: 'fallback-article-3',
-    category_id: 'fallback-category-4',
-    category_name: 'Support',
+    category: 'Support',
     title: 'How to submit and track a support ticket',
     slug: 'how-to-submit-and-track-a-support-ticket',
+    summary: 'Use support tickets to request help.',
+    content: 'Support guidance will appear here once live content is published.',
     last_updated: 'Coming soon'
   }
 ];
 
-function attachCategoryNames(articles, categories) {
-  const categoryMap = new Map(categories.map((category) => [category.id, category.name]));
-
+function normaliseArticles(articles) {
   return articles.map((article) => ({
     ...article,
-    category_name: article.category_name || categoryMap.get(article.category_id) || 'Knowledge Base',
+    category_name: article.category || 'Knowledge Base',
     last_updated: article.updated_at || article.created_at || article.last_updated || 'Coming soon'
   }));
 }
@@ -59,8 +60,9 @@ export function useKnowledgeBase() {
       setError(null);
 
       const { data: categoryData, error: categoryError } = await supabase
-        .from('knowledge_base_categories')
-        .select('id, name, slug, sort_order')
+        .from('knowledge_categories')
+        .select('id, name, slug, description, sort_order, is_active, created_at, updated_at')
+        .eq('is_active', true)
         .order('sort_order', { ascending: true });
 
       if (!isMounted) return;
@@ -68,15 +70,16 @@ export function useKnowledgeBase() {
       if (categoryError || !Array.isArray(categoryData) || categoryData.length === 0) {
         setCategories(fallbackCategories);
         setArticles(fallbackArticles);
-        setError(categoryError?.message || 'No knowledge base categories found. Showing placeholder data.');
+        setError(categoryError?.message || 'No knowledge categories found. Showing placeholder data.');
         setLoading(false);
         return;
       }
 
       const { data: articleData, error: articleError } = await supabase
         .from('knowledge_base_articles')
-        .select('id, category_id, title, slug, content, is_published, created_at, updated_at')
+        .select('id, title, slug, category, summary, content, is_published, client_visible, created_at, updated_at')
         .eq('is_published', true)
+        .eq('client_visible', true)
         .order('updated_at', { ascending: false });
 
       if (!isMounted) return;
@@ -87,7 +90,7 @@ export function useKnowledgeBase() {
         setArticles(fallbackArticles);
         setError(articleError?.message || 'No published articles found. Showing placeholder data.');
       } else {
-        setArticles(attachCategoryNames(articleData, categoryData));
+        setArticles(normaliseArticles(articleData));
       }
 
       setLoading(false);
