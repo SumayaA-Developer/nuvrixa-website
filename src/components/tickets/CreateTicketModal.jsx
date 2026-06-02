@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 const initialForm = {
   subject: '',
   description: '',
-  priority: 'Medium'
+  priority: 'medium'
 };
 
 export default function CreateTicketModal({ open, onClose, onCreated }) {
@@ -38,18 +38,16 @@ export default function CreateTicketModal({ open, onClose, onCreated }) {
 
     setLoading(true);
 
-    const ticketNumber = `NUV-${Date.now().toString().slice(-6)}`;
     const { data, error: insertError } = await supabase
       .from('tickets')
       .insert({
         client_id: user.id,
-        ticket_number: ticketNumber,
         subject: form.subject.trim(),
         description: form.description.trim(),
         priority: form.priority,
-        status: 'Open'
+        status: 'open'
       })
-      .select()
+      .select('id, client_id, project_id, subject, description, status, priority, assigned_to, last_reply_at, resolved_at, created_at, updated_at')
       .single();
 
     setLoading(false);
@@ -90,10 +88,10 @@ export default function CreateTicketModal({ open, onClose, onCreated }) {
         <label>
           Priority
           <select name="priority" value={form.priority} onChange={updateField}>
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-            <option value="Urgent">Urgent</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="urgent">Urgent</option>
           </select>
         </label>
 
