@@ -29,20 +29,24 @@ export function useDashboard() {
           .from('projects')
           .select('id', { count: 'exact', head: true })
           .eq('client_id', user.id)
-          .neq('status', 'Complete'),
+          .eq('client_visible', true)
+          .not('status', 'in', '(completed,cancelled,archived)'),
         supabase
           .from('tickets')
           .select('id', { count: 'exact', head: true })
           .eq('client_id', user.id)
-          .neq('status', 'Closed'),
+          .not('status', 'in', '(resolved,closed)'),
         supabase
           .from('knowledge_base_articles')
           .select('id', { count: 'exact', head: true })
-          .eq('is_published', true),
+          .eq('is_published', true)
+          .eq('client_visible', true),
         supabase
           .from('project_updates')
-          .select('id, projects!inner(client_id)', { count: 'exact', head: true })
+          .select('id, projects!inner(client_id, client_visible)', { count: 'exact', head: true })
           .eq('projects.client_id', user.id)
+          .eq('projects.client_visible', true)
+          .eq('client_visible', true)
       ]);
 
       if (!isMounted) return;
