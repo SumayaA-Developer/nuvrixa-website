@@ -1,23 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const fallbackTickets = [
   {
     id: 'fallback-ticket-1',
-    ticket_number: 'NUV-001',
     subject: 'Portal access setup',
     description: 'Placeholder support request.',
-    status: 'Open',
-    priority: 'Medium'
+    status: 'open',
+    priority: 'medium',
+    created_at: null,
+    updated_at: null
   },
   {
     id: 'fallback-ticket-2',
-    ticket_number: 'NUV-002',
     subject: 'Dashboard content review',
     description: 'Placeholder dashboard review request.',
-    status: 'Pending',
-    priority: 'Low'
+    status: 'open',
+    priority: 'low',
+    created_at: null,
+    updated_at: null
   }
 ];
 
@@ -25,7 +27,11 @@ const fallbackMessages = [
   {
     id: 'fallback-message-1',
     ticket_id: 'fallback-ticket-1',
-    message: 'Your support messages will appear here once Supabase data is connected.'
+    sender_id: null,
+    message: 'Your support messages will appear here once Supabase data is connected.',
+    is_internal: false,
+    attachments: [],
+    created_at: null
   }
 ];
 
@@ -36,62 +42,49 @@ export function useTickets() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  const loadTickets = useCallback(async () => {
+    if (!user?.id) return;
 
-    async function loadTickets() {
-      if (!user?.id) return;
+    setLoading(true);
+    setError(null);
 
-      setLoading(true);
-      setError(null);
+    const { data: ticketData, error: ticketError } = await supabase
+      .from('tickets')
+      .select('id, client_id, project_id, subject, description, status, priority, assigned_to, last_reply_at, resolved_at, created_at, updated_at, title, category, escalated_to, closed_at')
+      .eq('client_id', user.id)
+      .order('created_at', { ascending: false });
 
-      const { data: ticketData, error: ticketError } = await supabase
-        .from('tickets')
-        .select('id, ticket_number, subject, description, priority, status, created_at, updated_at')
-        .eq('client_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (!isMounted) return;
-
-      if (ticketError || !Array.isArray(ticketData) || ticketData.length === 0) {
-        setTickets(fallbackTickets);
-        setMessages(fallbackMessages);
-        setError(ticketError?.message || 'No tickets found yet. Showing placeholder data.');
-        setLoading(false);
-        return;
-      }
-
-      setTickets(ticketData);
-
-      const ticketIds = ticketData.map((ticket) => ticket.id);
-      const { data: messageData, error: messageError } = await supabase
-        .from('ticket_messages')
-        .select('id, ticket_id, sender_id, message, created_at')
-        .in('ticket_id', ticketIds)
-        .order('created_at', { ascending: true });
-
-      if (!isMounted) return;
-
-      if (messageError || !Array.isArray(messageData)) {
-        setMessages(fallbackMessages);
-      } else {
-        setMessages(messageData);
-      }
-
+    if (ticketError || !Array.isArray(ticketData) || ticketData.length === 0) {
+      setTickets(fallbackTickets);
+      setMessages(fallbackMessages);
+      setError(ticketError?.message || 'No tickets found yet. Showing placeholder data.');
       setLoading(false);
+      return;
     }
 
-    loadTickets();
+    setTickets(ticketData);
 
-    return () => {
-      isMounted = false;
-    };
+    const ticketIds = ticketData.map((ticket) => ticket.id);
+    const { data: messageData, error: messageError } = await supabase
+      .from('ticket_messages')
+      .select('id, ticket_id, sender_id, message, is_internal, attachments, created_at')
+      .in('ticket_id', ticketIds)
+      .eq('is_internal', false)
+      .order('created_at', { ascending: true });
+
+    setMessages(messageError || !Array.isArray(messageData) ? fallbackMessages : messageData);
+    setLoading(false);
   }, [user?.id]);
+
+  useEffect(() => {
+    loadTickets();
+  }, [loadTickets]);
 
   return {
     tickets,
     messages,
     loading,
-    error
+    error,
+    reloadTickets: loadTickets
   };
 }
