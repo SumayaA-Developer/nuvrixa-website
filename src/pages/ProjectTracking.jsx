@@ -1,20 +1,19 @@
-const projects = [
-  {
-    project: 'Nuvrixa Client Portal Setup',
-    status: 'In Progress',
-    progress: '45%',
-    targetDate: 'To be confirmed'
-  }
-];
+import { useProjects } from '../hooks/useProjects.js';
+import MilestoneTracker from '../components/projects/MilestoneTracker.jsx';
+import ProjectTimeline from '../components/projects/ProjectTimeline.jsx';
 
-const milestones = [
-  { title: 'Discovery and workflow mapping', status: 'Complete' },
-  { title: 'Public website foundation', status: 'Complete' },
-  { title: 'Authentication and portal shell', status: 'In Progress' },
-  { title: 'Live Supabase project data', status: 'Upcoming' }
-];
+function formatDate(value) {
+  if (!value) return 'To be confirmed';
+  try {
+    return new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium' }).format(new Date(value));
+  } catch {
+    return value;
+  }
+}
 
 export default function ProjectTracking() {
+  const { projects, loading, error } = useProjects();
+
   return (
     <div>
       <div className="section-head">
@@ -23,6 +22,9 @@ export default function ProjectTracking() {
         <p>Track the status, progress and milestones linked to your Nuvrixa system build.</p>
       </div>
 
+      {loading && <p>Loading projects...</p>}
+      {error && <p>{error}</p>}
+
       <div className="card" style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -30,30 +32,24 @@ export default function ProjectTracking() {
               <th style={{ textAlign: 'left', padding: '12px' }}>Project</th>
               <th style={{ textAlign: 'left', padding: '12px' }}>Status</th>
               <th style={{ textAlign: 'left', padding: '12px' }}>Progress</th>
-              <th style={{ textAlign: 'left', padding: '12px' }}>Target Date</th>
+              <th style={{ textAlign: 'left', padding: '12px' }}>Due Date</th>
             </tr>
           </thead>
           <tbody>
-            {projects.map((item) => (
-              <tr key={item.project}>
-                <td style={{ padding: '12px', borderTop: '1px solid var(--line)' }}>{item.project}</td>
-                <td style={{ padding: '12px', borderTop: '1px solid var(--line)' }}>{item.status}</td>
-                <td style={{ padding: '12px', borderTop: '1px solid var(--line)' }}>{item.progress}</td>
-                <td style={{ padding: '12px', borderTop: '1px solid var(--line)' }}>{item.targetDate}</td>
+            {projects.map((project) => (
+              <tr key={project.id}>
+                <td style={{ padding: '12px', borderTop: '1px solid var(--line)' }}>{project.title || project.name}</td>
+                <td style={{ padding: '12px', borderTop: '1px solid var(--line)' }}>{project.status}</td>
+                <td style={{ padding: '12px', borderTop: '1px solid var(--line)' }}>{project.progress_percent ?? 0}%</td>
+                <td style={{ padding: '12px', borderTop: '1px solid var(--line)' }}>{formatDate(project.due_date)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <div className="grid services-grid" style={{ marginTop: '20px' }}>
-        {milestones.map((milestone) => (
-          <article className="card" key={milestone.title}>
-            <p className="eyebrow">{milestone.status}</p>
-            <h3>{milestone.title}</h3>
-          </article>
-        ))}
-      </div>
+      <MilestoneTracker />
+      <ProjectTimeline />
     </div>
   );
 }
