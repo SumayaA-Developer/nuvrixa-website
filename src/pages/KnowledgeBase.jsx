@@ -1,29 +1,29 @@
-const categories = [
-  { name: 'Getting Started', count: 3 },
-  { name: 'Client Portal', count: 2 },
-  { name: 'Project Tracking', count: 2 },
-  { name: 'Support', count: 1 }
-];
+import { useMemo, useState } from 'react';
+import { useKnowledgeBase } from '../hooks/useKnowledgeBase.js';
 
-const articles = [
-  {
-    categoryName: 'Getting Started',
-    articleTitle: 'How to use your Nuvrixa client portal',
-    lastUpdated: 'Coming soon'
-  },
-  {
-    categoryName: 'Project Tracking',
-    articleTitle: 'Understanding project milestones and updates',
-    lastUpdated: 'Coming soon'
-  },
-  {
-    categoryName: 'Support',
-    articleTitle: 'How to submit and track a support ticket',
-    lastUpdated: 'Coming soon'
+function formatDate(value) {
+  if (!value) return 'Coming soon';
+  try {
+    return new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium' }).format(new Date(value));
+  } catch {
+    return value;
   }
-];
+}
 
 export default function KnowledgeBase() {
+  const { categories, articles, loading, error } = useKnowledgeBase();
+  const [search, setSearch] = useState('');
+
+  const filteredArticles = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return articles;
+    return articles.filter((article) => article.title?.toLowerCase().includes(query));
+  }, [articles, search]);
+
+  function countArticlesForCategory(categoryName) {
+    return articles.filter((article) => article.category === categoryName || article.category_name === categoryName).length;
+  }
+
   return (
     <div>
       <div className="section-head">
@@ -34,15 +34,19 @@ export default function KnowledgeBase() {
 
       <label style={{ marginBottom: '20px' }}>
         Search Articles
-        <input placeholder="Search the knowledge base..." />
+        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search the knowledge base..." />
       </label>
+
+      {loading && <p>Loading knowledge base...</p>}
+      {error && <p>{error}</p>}
 
       <div className="grid services-grid">
         {categories.map((category) => (
-          <article className="card" key={category.name}>
+          <article className="card" key={category.id || category.name}>
             <p className="eyebrow">Category</p>
             <h3>{category.name}</h3>
-            <p>{category.count} articles</p>
+            <p>{category.description || 'Knowledge base category'}</p>
+            <p>{countArticlesForCategory(category.name)} articles</p>
           </article>
         ))}
       </div>
@@ -52,26 +56,23 @@ export default function KnowledgeBase() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th style={{ textAlign: 'left', padding: '12px' }}>Category Name</th>
-              <th style={{ textAlign: 'left', padding: '12px' }}>Article Title</th>
+              <th style={{ textAlign: 'left', padding: '12px' }}>Category</th>
+              <th style={{ textAlign: 'left', padding: '12px' }}>Title</th>
+              <th style={{ textAlign: 'left', padding: '12px' }}>Summary</th>
               <th style={{ textAlign: 'left', padding: '12px' }}>Last Updated</th>
             </tr>
           </thead>
           <tbody>
-            {articles.map((article) => (
-              <tr key={article.articleTitle}>
-                <td style={{ padding: '12px', borderTop: '1px solid var(--line)' }}>{article.categoryName}</td>
-                <td style={{ padding: '12px', borderTop: '1px solid var(--line)' }}>{article.articleTitle}</td>
-                <td style={{ padding: '12px', borderTop: '1px solid var(--line)' }}>{article.lastUpdated}</td>
+            {filteredArticles.map((article) => (
+              <tr key={article.id || article.slug || article.title}>
+                <td style={{ padding: '12px', borderTop: '1px solid var(--line)' }}>{article.category || article.category_name}</td>
+                <td style={{ padding: '12px', borderTop: '1px solid var(--line)' }}>{article.title}</td>
+                <td style={{ padding: '12px', borderTop: '1px solid var(--line)' }}>{article.summary || 'No summary available yet.'}</td>
+                <td style={{ padding: '12px', borderTop: '1px solid var(--line)' }}>{formatDate(article.last_updated)}</td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
-
-      <div className="card" style={{ marginTop: '20px' }}>
-        <h3>Next Integration</h3>
-        <p>This page is ready to connect to knowledge_base_categories and knowledge_base_articles in Supabase.</p>
       </div>
     </div>
   );
