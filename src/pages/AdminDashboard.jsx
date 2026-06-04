@@ -1,26 +1,26 @@
-import { Activity, FolderKanban, LifeBuoy, UsersRound } from 'lucide-react';
-
-const metrics = [
-  { label: 'Active Users', value: '12', icon: UsersRound },
-  { label: 'Open Tickets', value: '4', icon: LifeBuoy },
-  { label: 'Active Projects', value: '6', icon: FolderKanban },
-  { label: 'Recent Admin Actions', value: '9', icon: Activity }
-];
-
-const recentActions = [
-  { action: 'User role reviewed', actor: 'Admin', time: 'Pending live data' },
-  { action: 'Ticket status updated', actor: 'Admin', time: 'Pending live data' },
-  { action: 'Knowledge base article prepared', actor: 'Admin', time: 'Pending live data' }
-];
+import { Bell, FolderKanban, LifeBuoy, UsersRound } from 'lucide-react';
+import { useAdminDashboard } from '../hooks/useAdminDashboard.js';
 
 export default function AdminDashboard() {
+  const { totalUsers, activeProjects, openTickets, unreadNotifications, loading, error } = useAdminDashboard();
+
+  const metrics = [
+    { label: 'Total Users', value: totalUsers, icon: UsersRound },
+    { label: 'Active Projects', value: activeProjects, icon: FolderKanban },
+    { label: 'Open Tickets', value: openTickets, icon: LifeBuoy },
+    { label: 'Unread Notifications', value: unreadNotifications, icon: Bell }
+  ];
+
   return (
     <div>
       <div className="section-head">
         <p className="eyebrow">Admin Dashboard</p>
         <h2>Nuvrixa system overview.</h2>
-        <p>Monitor users, projects, support activity and recent governance actions.</p>
+        <p>Monitor users, projects, support activity and notifications from live Supabase data.</p>
       </div>
+
+      {loading && <p>Loading admin metrics...</p>}
+      {error && <p>{error}</p>}
 
       <div className="grid services-grid">
         {metrics.map((metric) => {
@@ -36,16 +36,8 @@ export default function AdminDashboard() {
       </div>
 
       <div className="card" style={{ marginTop: '20px' }}>
-        <h3>Recent Admin Actions</h3>
-        <div style={{ display: 'grid', gap: '12px' }}>
-          {recentActions.map((item) => (
-            <article className="glass-card card" key={item.action}>
-              <p className="eyebrow">{item.actor}</p>
-              <h3>{item.action}</h3>
-              <p>{item.time}</p>
-            </article>
-          ))}
-        </div>
+        <h3>Admin Operations</h3>
+        <p>This dashboard is now connected to live Supabase platform metrics.</p>
       </div>
     </div>
   );
